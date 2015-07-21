@@ -11,6 +11,18 @@ Requires WP:       3.8
 Requires PHP:      5.3
 */
 
+//    '<script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>';
+/**
+ * Proper way to enqueue scripts and styles
+ */
+function theme_name_scripts() {
+	wp_enqueue_script( 'google-maps', '//maps.googleapis.com/maps/api/js?v=3.exp', array( 'jquery' ), '1.0.0', false );
+	// die('test');
+}
+
+add_action( 'wp_enqueue_scripts', 'theme_name_scripts' );
+
+
 add_action( 'init', 'register_cpt_location' );
 
 function register_cpt_location() {
@@ -202,3 +214,145 @@ function wpt_save_location_meta($post_id, $post) {
 }
 
 add_action('save_post', 'wpt_save_location_meta', 1, 2); // save the custom fields
+
+
+function location_shortcode( $atts ) {
+    $a = shortcode_atts( array(
+        'foo' => 'something',
+        'bar' => 'something else',
+    ), $atts );
+    
+ /*
+   [
+  ['Bondi Beach', -33.890542, 151.274856, 4],
+  ['Coogee Beach', -33.923036, 151.259052, 5],
+  ['Cronulla Beach', -34.028249, 151.157507, 3],
+  ['Manly Beach', -33.80010128657071, 151.28747820854187, 2],
+  ['Maroubra Beach', -33.950198, 151.259302, 1]
+]
+*/
+	global $post;
+    
+    $locations = array();
+    
+    $args = array( 'posts_per_page' => -1, 'post_type' => 'location' );
+	
+	$myposts = get_posts( $args );
+	foreach ( $myposts as $post ) : setup_postdata( $post ); 
+		$location = array();
+		
+		$location[] = get_the_title();
+		
+		$location[] = get_post_meta( get_the_ID(), 'latitude', true );
+				
+		$location[] = get_post_meta( get_the_ID(), 'longitude', true );
+		
+		// z index
+		$location[] = ++$z;
+		
+		$fruits = wp_get_post_terms($post->ID, 'fruits', array("fields" => "names"));
+		
+		sort($fruits);
+		
+		$fruits = strtolower(join('', $fruits));
+		
+		
+		$location[] = get_the_title();
+		
+		
+		if($fruits == 'apple' ){
+			$location[] = "/wp-content/uploads/2015/07/Icon_apple.gif";	
+		}else if($fruits == 'applepear' ){
+			$location[] = "/wp-content/uploads/2015/07/Icon_pear_apple.gif";
+		}else if($fruits == 'applecherry' ){
+			$location[] = "/wp-content/uploads/2015/07/Icon_cherry_apple.gif";
+		}else if($fruits == 'cherry' ){
+			$location[] = "/wp-content/uploads/2015/07/Icon_cherry.gif";
+		}else if($fruits == 'pear' ){
+			$location[] = "/wp-content/uploads/2015/07/Icon_pear.gif";
+		}else if($fruits == 'cherrypear' ){
+			$location[] = "/wp-content/uploads/2015/07/Icon_pear_cherry.gif";
+		}else if($fruits == 'applecherrypear' ){
+			$location[] = "/wp-content/uploads/2015/07/Icon_cherry_apple_pear.gif";
+		}
+
+		
+		$locations[] = $location;
+	endforeach; 
+	wp_reset_postdata();
+
+    return '<script>
+	var map;
+	
+	var getCen;
+	
+	var infowindow = null;
+	
+	/**
+	 * Data for the markers consisting of a name, a LatLng and a zIndex for
+	 * the order in which these markers should display on top of each
+	 * other.
+	 */
+	var locations = '.json_encode($locations, JSON_PRETTY_PRINT).';
+
+
+	function initialize() {
+	  map = new google.maps.Map(document.getElementById("map-canvas"), {
+	    zoom: 7,
+	    center: {lat: 47.286835, lng: -120.212614}
+	  });
+	 
+		getCen = map.getCenter();
+		
+		setMarkers(map, locations);
+
+	}
+	
+	function setMarkers(map, locations) {
+	// Add markers to the map
+
+	infowindow = new google.maps.InfoWindow({
+	  content: "loading..."
+	});
+
+  // Origins, anchor positions and coordinates of the marker
+  // increase in the X direction to the right and in
+  // the Y direction down.
+  for (var i = 0; i < locations.length; i++) {
+    var location = locations[i];
+	var image = {
+		url: location[5]
+	};
+	var myLatLng = new google.maps.LatLng(location[1], location[2]);
+    var marker = new google.maps.Marker({
+        position: myLatLng,
+        map: map,
+        icon: image,
+        title: location[0],
+        zIndex: location[3],
+        html: location[4]
+    });
+    
+	google.maps.event.addListener(marker, "click", function() {
+		infowindow.setContent(this.html);
+		infowindow.open(map,this);
+	});
+	
+
+  }
+}
+
+	
+	google.maps.event.addDomListener(window, "resize", function() {
+		map.setCenter(getCen);
+	});
+	
+
+	
+	google.maps.event.addDomListener(window, "load", initialize);
+
+    </script>
+<div class="flex-video widescreen vimeo"><div id="map-canvas" style=" width: 100% !important; height: 750px !important;"></div>
+</div>';
+}
+add_shortcode( 'location', 'location_shortcode' );
