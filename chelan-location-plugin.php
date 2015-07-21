@@ -4,12 +4,18 @@
 Plugin Name:       Chelan Location Plugin
 Plugin URI:        https://chelanfruit.com
 Description:       Locations
-Version:           1.0.1
+Version:           1.1.1
 Author:            Bradford Knowlton
 GitHub Plugin URI: https://github.com/DesignMissoula/chelan-recipe-plugin
 Requires WP:       3.8
 Requires PHP:      5.3
 */
+
+require_once ( plugin_dir_path( __FILE__ ) . '/inc/location-shortcode.php' );
+
+require_once ( plugin_dir_path( __FILE__ ) . '/inc/class-location-widget.php' );
+
+
 
 //    '<script src="https://maps.googleapis.com/maps/api/js?v=3.exp"></script>';
 /**
@@ -216,12 +222,11 @@ function wpt_save_location_meta($post_id, $post) {
 add_action('save_post', 'wpt_save_location_meta', 1, 2); // save the custom fields
 
 
-function location_shortcode( $atts ) {
-    $a = shortcode_atts( array(
-        'foo' => 'something',
-        'bar' => 'something else',
-    ), $atts );
-    
+
+function generate_map($atts){
+	$map = '';
+	
+	
  /*
    [
   ['Bondi Beach', -33.890542, 151.274856, 4],
@@ -231,6 +236,9 @@ function location_shortcode( $atts ) {
   ['Maroubra Beach', -33.950198, 151.259302, 1]
 ]
 */
+
+	$z = 1;
+	
 	global $post;
     
     $locations = array();
@@ -280,8 +288,8 @@ function location_shortcode( $atts ) {
 		$locations[] = $location;
 	endforeach; 
 	wp_reset_postdata();
-
-    return '<script>
+	
+	$map = '<script>
 	var map;
 	
 	var getCen;
@@ -352,7 +360,9 @@ function location_shortcode( $atts ) {
 	google.maps.event.addDomListener(window, "load", initialize);
 
     </script>
-<div class="flex-video widescreen vimeo"><div id="map-canvas" style=" width: 100% !important; height: 750px !important;"></div>
+<div ><div class="flex-video widescreen vimeo" id="map-canvas"></div>
 </div>';
+
+	
+	return $map;
 }
-add_shortcode( 'location', 'location_shortcode' );
