@@ -4,7 +4,7 @@
 Plugin Name:       Chelan Location Plugin
 Plugin URI:        https://chelanfruit.com
 Description:       Locations
-Version:           1.1.1
+Version:           2.1.1
 Author:            Bradford Knowlton
 GitHub Plugin URI: https://github.com/DesignMissoula/chelan-recipe-plugin
 Requires WP:       3.8
@@ -111,7 +111,7 @@ function register_cpt_location() {
 // Add the Recipe Meta Boxes
 
 function add_location_metaboxes() {
-	add_meta_box('ctp_location_details', 'Location Details', 'ctp_location_details', 'location', 'normal', 'default');	
+	add_meta_box('ctp_location_details', 'Location Details', 'ctp_location_details', 'location', 'normal', 'high');	
 }
 
 
@@ -198,11 +198,11 @@ function wpt_save_location_meta($post_id, $post) {
 	
 	$location_meta['latitude'] = $_POST['latitude'];
 	$location_meta['longitude'] = $_POST['longitude'];
-	$location_meta['longitude'] = $_POST['longitude'];
-	$location_meta['longitude'] = $_POST['longitude'];	
-	$location_meta['longitude'] = $_POST['longitude'];
-	$location_meta['longitude'] = $_POST['longitude'];
-	$location_meta['longitude'] = $_POST['longitude'];
+	$location_meta['address'] = $_POST['address'];
+	$location_meta['city'] = $_POST['city'];	
+	$location_meta['state'] = $_POST['state'];
+	$location_meta['zipcode'] = $_POST['zipcode'];
+	$location_meta['phonenumber'] = $_POST['phonenumber'];
 		
 	// Add values of $recipes_meta as custom fields
 	
@@ -222,6 +222,22 @@ function wpt_save_location_meta($post_id, $post) {
 add_action('save_post', 'wpt_save_location_meta', 1, 2); // save the custom fields
 
 
+
+if( !function_exists('format_phone_number')){
+	
+	function format_phone_number($number){
+		$number = preg_replace('#[^0-9]#','',$number);
+	
+		if( ! $number || strlen($number) != 10 ){
+			return 'N/A';
+		}
+		
+		$number = preg_replace('#[^0-9]#','',$number);	
+		$number = sprintf('(%d) %d-%d',substr($number,0,3),substr($number,3,3),substr($number,6,4));
+		return $number;	
+	}
+
+} // end function_exists
 
 function generate_map($atts){
 	$map = '';
@@ -265,7 +281,7 @@ function generate_map($atts){
 		$fruits = strtolower(join('', $fruits));
 		
 		
-		$location[] = get_the_title();
+		$location[] = get_the_title().'<br/>'.get_post_meta( get_the_ID(), 'address', true ).'<br/>'.get_post_meta( get_the_ID(), 'city', true ).', '.get_post_meta( get_the_ID(), 'state', true ).' '.get_post_meta( get_the_ID(), 'zipcode', true ).'<br/>'.format_phone_number(get_post_meta( get_the_ID(), 'phonenumber', true )).'';
 		
 		
 		if($fruits == 'apple' ){
